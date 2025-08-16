@@ -1,8 +1,8 @@
 import React from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface KittenFiltersProps {
@@ -28,56 +28,81 @@ const KittenFilters = ({
   onPriceRangeChange,
   onClearFilters
 }: KittenFiltersProps) => {
+  console.log('KittenFilters rendered with filters:', { searchTerm, breedFilter, genderFilter, priceRange });
+
+  const breeds = [
+    'Persa',
+    'Maine Coon',
+    'Siamés',
+    'Británico de Pelo Corto',
+    'Bengalí',
+    'Ragdoll'
+  ];
+
+  const hasActiveFilters = searchTerm || breedFilter !== 'all' || genderFilter !== 'all' || priceRange !== 'all';
+
   return (
-    <Card className="mb-6">
-      <CardContent className="p-4">
+    <Card className="mb-8">
+      <CardContent className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5" />
-          <h3 className="font-semibold">Filtros</h3>
+          <Filter className="w-5 h-5 text-muted-foreground" />
+          <h3 className="font-semibold">Filtrar Gatitos</h3>
+          {hasActiveFilters && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClearFilters}
+              className="ml-auto text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Limpiar filtros
+            </Button>
+          )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Buscar gatitos..."
+              placeholder="Buscar por nombre o raza..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
-          
+
+          {/* Breed Filter */}
           <Select value={breedFilter} onValueChange={onBreedChange}>
             <SelectTrigger>
               <SelectValue placeholder="Todas las razas" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las razas</SelectItem>
-              <SelectItem value="Persa">Persa</SelectItem>
-              <SelectItem value="Maine Coon">Maine Coon</SelectItem>
-              <SelectItem value="Siamés">Siamés</SelectItem>
-              <SelectItem value="Británico de Pelo Corto">Británico de Pelo Corto</SelectItem>
-              <SelectItem value="Bengalí">Bengalí</SelectItem>
-              <SelectItem value="Ragdoll">Ragdoll</SelectItem>
-              <SelectItem value="Abisinio">Abisinio</SelectItem>
-              <SelectItem value="Angora Turco">Angora Turco</SelectItem>
+              {breeds.map((breed) => (
+                <SelectItem key={breed} value={breed}>
+                  {breed}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          
+
+          {/* Gender Filter */}
           <Select value={genderFilter} onValueChange={onGenderChange}>
             <SelectTrigger>
               <SelectValue placeholder="Todos los géneros" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los géneros</SelectItem>
-              <SelectItem value="male">Macho</SelectItem>
-              <SelectItem value="female">Hembra</SelectItem>
+              <SelectItem value="Macho">Macho</SelectItem>
+              <SelectItem value="Hembra">Hembra</SelectItem>
             </SelectContent>
           </Select>
-          
+
+          {/* Price Range Filter */}
           <Select value={priceRange} onValueChange={onPriceRangeChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Rango de precio" />
+              <SelectValue placeholder="Todos los precios" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los precios</SelectItem>
@@ -87,10 +112,6 @@ const KittenFilters = ({
               <SelectItem value="1500+">$1,500+</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Button variant="outline" onClick={onClearFilters} className="w-full">
-            Limpiar Filtros
-          </Button>
         </div>
       </CardContent>
     </Card>

@@ -1,11 +1,12 @@
-import React from 'react';
-import { Heart, ShoppingCart, Star, Calendar, Stethoscope, Users } from 'lucide-react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Heart, ShoppingCart, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Kitten } from '@/types/kitten';
 import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface KittenDetailsModalProps {
   kitten: Kitten | null;
@@ -14,110 +15,192 @@ interface KittenDetailsModalProps {
 }
 
 const KittenDetailsModal = ({ kitten, isOpen, onClose }: KittenDetailsModalProps) => {
-  const { addToCart } = useCart();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { addItem } = useCart();
+  const { toast } = useToast();
+
+  console.log('KittenDetailsModal rendered, kitten:', kitten?.name);
 
   if (!kitten) return null;
 
   const handleAddToCart = () => {
-    addToCart(kitten);
+    console.log('Adding kitten to cart from modal:', kitten.name);
+    addItem(kitten);
+    toast({
+      title: "¡Agregado al carrito!",
+      description: `${kitten.name} ha sido agregado a tu carrito.`,
+    });
+    onClose();
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => 
+      prev === kitten.images.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? kitten.images.length - 1 : prev - 1
+    );
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">{kitten.name}</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6">
-          <div className="relative">
-            <img
-              src={kitten.image}
-              alt={kitten.name}
-              className="w-full h-64 object-cover rounded-lg"
-            />
-            <div className="absolute top-4 right-4">
-              <Badge variant={kitten.available ? "default" : "secondary"} className="text-sm">
-                {kitten.available ? "Disponible" : "No disponible"}
-              </Badge>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Raza:</span>
-                <span className="text-sm">{kitten.breed}</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Edad:</span>
-                <span className="text-sm">{kitten.age} {kitten.age === 1 ? 'año' : 'años'}</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Género:</span>
-                <span className="text-sm">{kitten.gender === 'male' ? 'Macho' : 'Hembra'}</span>
-              </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Image Gallery */}
+          <div className="space-y-4">
+            <div className="relative">
+              <img 
+                src={kitten.images[currentImageIndex]} 
+                alt={`${kitten.name} - Imagen ${currentImageIndex + 1}`}
+                className="w-full h-80 object-cover rounded-lg"
+              />
+              {kitten.images.length > 1 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                    onClick={prevImage}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
+                    onClick={nextImage}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
             </div>
             
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Stethoscope className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Vacunado:</span>
-                <Badge variant={kitten.vaccinated ? "default" : "secondary"} className="text-xs">
-                  {kitten.vaccinated ? "Sí" : "No"}
-                </Badge>
+            {/* Thumbnail Gallery */}
+            {kitten.images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto">
+                {kitten.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
+                      currentImageIndex === index ? 'border-pink-500' : 'border-gray-200'
+                    }`}
+                  >
+                    <img 
+                      src={image} 
+                      alt={`${kitten.name} - Miniatura ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Details */}
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold">{kitten.breed}</h3>
+                  <p className="text-muted-foreground">{kitten.age} {kitten.age === 1 ? 'año' : 'años'}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-pink-600">${kitten.price}</div>
+                  <Badge variant={kitten.gender === 'Macho' ? 'default' : 'secondary'}>
+                    {kitten.gender}
+                  </Badge>
+                </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                <span className="text-sm font-medium">Calificación:</span>
-                <span className="text-sm">4.8/5</span>
+              <p className="text-muted-foreground">{kitten.description}</p>
+            </div>
+
+            <Separator />
+
+            {/* Health Status */}
+            <div>
+              <h4 className="font-semibold mb-3">Estado de Salud</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {kitten.vaccinated ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-600" />
+                  )}
+                  <span className="text-sm">Vacunado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {kitten.neutered ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-600" />
+                  )}
+                  <span className="text-sm">Esterilizado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {kitten.healthCertificate ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <X className="w-4 h-4 text-red-600" />
+                  )}
+                  <span className="text-sm">Certificado de Salud</span>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <Separator />
-          
-          <div>
-            <h3 className="font-semibold mb-2">Descripción</h3>
-            <p className="text-muted-foreground leading-relaxed">{kitten.description}</p>
-          </div>
-          
-          <div>
-            <h3 className="font-semibold mb-2">Características especiales</h3>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">Cariñoso</Badge>
-              <Badge variant="outline">Juguetón</Badge>
-              <Badge variant="outline">Sociable</Badge>
-              <Badge variant="outline">Inteligente</Badge>
-              {kitten.vaccinated && <Badge variant="outline">Vacunado</Badge>}
+
+            <Separator />
+
+            {/* Personality */}
+            <div>
+              <h4 className="font-semibold mb-3">Personalidad</h4>
+              <div className="flex flex-wrap gap-2">
+                {kitten.personality.map((trait, index) => (
+                  <Badge key={index} variant="outline">
+                    {trait}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          <Separator />
-          
-          <div className="flex justify-between items-center">
-            <div className="text-3xl font-bold text-primary">
-              ${kitten.price.toLocaleString()}
-            </div>
-            
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon">
-                <Heart className="h-4 w-4" />
-              </Button>
+
+            {kitten.specialNeeds.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h4 className="font-semibold mb-3">Necesidades Especiales</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {kitten.specialNeeds.map((need, index) => (
+                      <Badge key={index} variant="secondary">
+                        {need}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <Separator />
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
               <Button 
                 onClick={handleAddToCart}
-                disabled={!kitten.available}
-                className="flex items-center gap-2"
-                size="lg"
+                className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
               >
-                <ShoppingCart className="h-4 w-4" />
-                {kitten.available ? 'Adoptar Ahora' : 'No Disponible'}
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Adoptar a {kitten.name}
+              </Button>
+              <Button variant="outline" size="icon">
+                <Heart className="w-4 h-4" />
               </Button>
             </div>
           </div>

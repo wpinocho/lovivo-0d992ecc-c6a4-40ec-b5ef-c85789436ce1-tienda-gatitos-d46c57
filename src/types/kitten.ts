@@ -1,14 +1,18 @@
 export interface Kitten {
-  id: string;
+  id: number;
   name: string;
   breed: string;
   age: number;
+  gender: 'Macho' | 'Hembra';
   price: number;
   image: string;
   description: string;
-  gender: 'male' | 'female';
   vaccinated: boolean;
-  available: boolean;
+  neutered: boolean;
+  healthCertificate: boolean;
+  personality: string[];
+  specialNeeds: string[];
+  images: string[];
 }
 
 export interface CartItem {

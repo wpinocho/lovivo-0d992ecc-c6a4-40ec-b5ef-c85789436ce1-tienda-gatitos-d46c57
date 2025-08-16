@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { CartItem, Kitten } from '@/types/kitten';
-import { toast } from '@/hooks/use-toast';
+import { Kitten, CartItem } from '@/types/kitten';
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (kitten: Kitten) => void;
-  removeFromCart: (kittenId: string) => void;
+  addItem: (kitten: Kitten) => void;
+  removeItem: (kittenId: number) => void;
+  updateQuantity: (kittenId: number, quantity: number) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getItemCount: () => number;
@@ -13,51 +13,61 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider = ({ children }: { children: ReactNode }) => {
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+};
+
+interface CartProviderProps {
+  children: ReactNode;
+}
+
+export const CartProvider = ({ children }: CartProviderProps) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = (kitten: Kitten) => {
-    console.log('Adding kitten to cart:', kitten.name);
+  console.log('CartProvider rendered, items count:', items.length);
+
+  const addItem = (kitten: Kitten) => {
+    console.log('Adding item to cart:', kitten.name);
     setItems(prevItems => {
       const existingItem = prevItems.find(item => item.kitten.id === kitten.id);
       if (existingItem) {
-        toast({
-          title: "¡Ya tienes este gatito!",
-          description: `${kitten.name} ya está en tu carrito.`,
-        });
-        return prevItems;
+        return prevItems.map(item =>
+          item.kitten.id === kitten.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
       }
-      
-      toast({
-        title: "¡Gatito agregado!",
-        description: `${kitten.name} ha sido agregado a tu carrito.`,
-      });
-      
       return [...prevItems, { kitten, quantity: 1 }];
     });
   };
 
-  const removeFromCart = (kittenId: string) => {
-    console.log('Removing kitten from cart:', kittenId);
-    setItems(prevItems => {
-      const item = prevItems.find(item => item.kitten.id === kittenId);
-      if (item) {
-        toast({
-          title: "Gatito removido",
-          description: `${item.kitten.name} ha sido removido del carrito.`,
-        });
-      }
-      return prevItems.filter(item => item.kitten.id !== kittenId);
-    });
+  const removeItem = (kittenId: number) => {
+    console.log('Removing item from cart:', kittenId);
+    setItems(prevItems => prevItems.filter(item => item.kitten.id !== kittenId));
+  };
+
+  const updateQuantity = (kittenId: number, quantity: number) => {
+    console.log('Updating quantity for item:', kittenId, 'to:', quantity);
+    if (quantity <= 0) {
+      removeItem(kittenId);
+      return;
+    }
+    setItems(prevItems =>
+      prevItems.map(item =>
+        item.kitten.id === kittenId
+          ? { ...item, quantity }
+          : item
+      )
+    );
   };
 
   const clearCart = () => {
     console.log('Clearing cart');
     setItems([]);
-    toast({
-      title: "Carrito vaciado",
-      description: "Todos los gatitos han sido removidos del carrito.",
-    });
   };
 
   const getTotalPrice = () => {
@@ -65,27 +75,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getItemCount = () => {
-    return items.reduce((count, item) => count + item.quantity, 0);
+    return items.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const value: CartContextType = {
+    items,
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    getTotalPrice,
+    getItemCount
   };
 
   return (
-    <CartContext.Provider value={{
-      items,
-      addToCart,
-      removeFromCart,
-      clearCart,
-      getTotalPrice,
-      getItemCount
-    }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );
-};
-
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
 };
